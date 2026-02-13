@@ -73,15 +73,44 @@ npm run preview
 
 ### 4. Model Setup
 
-Download pre-trained YOLO model or train your own:
+Use one of these model options:
+
+#### Option A: Lightweight TFLite (recommended for Pi)
+
+If your Pi reports TFLite operator-version mismatch errors, export a compatible
+model using TensorFlow 2.14 on a laptop/desktop:
+
+```bash
+python -m venv tf214
+source tf214/bin/activate
+pip install --upgrade pip
+pip install "tensorflow==2.14.0"
+python models/train_export_tflite_tf214.py --dataset-root <path-to-dataset>
+```
+
+Copy the generated files into this project:
+
+```bash
+models/model.tflite
+models/labels.txt
+```
+
+Set in `raspberry-pi/.env`:
+
+```env
+DETECTOR_TYPE=tflite
+TFLITE_MODEL_PATH=../models/model.tflite
+TFLITE_LABELS_PATH=../models/labels.txt
+```
+
+#### Option B: YOLO (heavier)
 
 ```bash
 # Place your model file in models/
 models/
   └── yolo-waste.pt
 
-# Or train custom model:
-python train_model.py --data dataset/data.yaml --epochs 100
+# Then set DETECTOR_TYPE=yolo in raspberry-pi/.env
 ```
 
 ## Hardware Connections
@@ -187,6 +216,10 @@ sudo usermod -a -G gpio $USER
 ```
 MQTT_BROKER=broker.hivemq.com
 MQTT_PORT=1883
+DETECTOR_TYPE=tflite
+TFLITE_MODEL_PATH=../models/model.tflite
+TFLITE_LABELS_PATH=../models/labels.txt
+CONF_THRESHOLD=0.65
 MODEL_PATH=../models/yolo-waste.pt
 CAMERA_ID=0
 ```

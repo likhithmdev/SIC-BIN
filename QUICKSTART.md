@@ -53,7 +53,19 @@ DB_NAME=smartbin_db
 ```bash
 cd raspberry-pi
 pip install -r requirements.txt
+cp .env.example .env
 python main.py
+```
+
+If `tflite-runtime` throws an operator-version error, export a compatible model
+with TensorFlow 2.14 on a laptop/desktop:
+
+```bash
+python -m venv tf214
+source tf214/bin/activate
+pip install --upgrade pip
+pip install "tensorflow==2.14.0"
+python models/train_export_tflite_tf214.py --dataset-root <path-to-dataset>
 ```
 
 ## 📁 Project Structure

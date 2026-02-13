@@ -51,7 +51,18 @@ class TFLiteWasteClassifier:
         self.labels = self._load_labels(labels_path)
 
         logger.info("Loading TFLite model from %s", model_path)
-        self.interpreter = Interpreter(model_path=model_path)
+        try:
+            self.interpreter = Interpreter(model_path=model_path)
+        except ValueError as exc:
+            # Common on Raspberry Pi when model was exported with newer TF/TFLite
+            # than installed tflite-runtime supports.
+            raise ValueError(
+                f"Failed to load TFLite model '{model_path}'. "
+                "This usually means model/runtime version mismatch. "
+                "For Raspberry Pi tflite-runtime 2.14.0, re-export the model with "
+                "TensorFlow 2.14 using models/train_export_tflite_tf214.py, or set "
+                "DETECTOR_TYPE=heuristic in raspberry-pi/.env."
+            ) from exc
         self.interpreter.allocate_tensors()
 
         self.input_details = self.interpreter.get_input_details()
@@ -150,4 +161,3 @@ class TFLiteWasteClassifier:
             "destination": destination,
             "confidence": round(confidence, 2),
         }
-

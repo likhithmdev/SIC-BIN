@@ -38,6 +38,7 @@ Hardware Control (Servos, Sensors)
 ```bash
 cd raspberry-pi
 pip install -r requirements.txt
+cp .env.example .env
 python main.py
 ```
 
@@ -85,6 +86,21 @@ npm run dev
 ## 🔧 Configuration
 
 Edit `raspberry-pi/config.py` and `server/.env` for MQTT broker settings.
+
+## 🧠 Pi-Friendly TFLite Training (TF 2.14)
+
+If your Raspberry Pi fails to load `model.tflite` with an operator-version error,
+export a compatible model using TensorFlow 2.14 on your laptop/PC:
+
+```bash
+python -m venv tf214
+source tf214/bin/activate
+pip install --upgrade pip
+pip install "tensorflow==2.14.0"
+python models/train_export_tflite_tf214.py --dataset-root <path-to-dataset>
+```
+
+Then copy generated files to `models/model.tflite` and `models/labels.txt`.
 
 ## 📄 License
 
