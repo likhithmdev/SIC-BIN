@@ -185,8 +185,12 @@ class SmartBinSystem:
                 # Publish status
                 self.mqtt.publish_bin_status(levels)
                 
-                # Check for full bins
-                full_bins = self.bin_monitor.check_any_full(config.BIN_FULL_THRESHOLD)
+                # Check for full bins using current readings (avoid re-triggering sensors)
+                full_bins = [
+                    bin_name
+                    for bin_name, level in levels.items()
+                    if level >= config.BIN_FULL_THRESHOLD
+                ]
                 
                 if full_bins:
                     for bin_name in full_bins:
