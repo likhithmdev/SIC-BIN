@@ -25,7 +25,8 @@ class GPIOConfig:
     # Ultrasonic sensors (Trigger, Echo pairs)
     ULTRASONIC_DRY = (23, 24)
     ULTRASONIC_WET = (25, 8)
-    ULTRASONIC_ELECTRONIC = (7, 1)
+    # Avoid GPIO1 for ultrasonic echo (special I2C EEPROM pin on many Pi boards)
+    ULTRASONIC_ELECTRONIC = (20, 21)
     
     # LED indicators (optional)
     LED_STATUS = 26
