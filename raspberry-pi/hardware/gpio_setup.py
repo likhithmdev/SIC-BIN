@@ -26,7 +26,6 @@ class GPIOConfig:
     ULTRASONIC_DRY = (23, 24)
     ULTRASONIC_WET = (25, 8)
     ULTRASONIC_ELECTRONIC = (7, 1)
-    ULTRASONIC_PROCESSING = (20, 21)
     
     # LED indicators (optional)
     LED_STATUS = 26
@@ -64,7 +63,6 @@ class GPIOConfig:
             'dry': (*GPIOConfig.ULTRASONIC_DRY, 30.0),
             'wet': (*GPIOConfig.ULTRASONIC_WET, 30.0),
             'electronic': (*GPIOConfig.ULTRASONIC_ELECTRONIC, 30.0),
-            'processing': (*GPIOConfig.ULTRASONIC_PROCESSING, 30.0)
         }
     
     @staticmethod
