@@ -6,6 +6,7 @@ Controls sorting mechanism servo motor
 import RPi.GPIO as GPIO
 import time
 import logging
+from threading import Lock
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ class ServoController:
         self.frequency = frequency
         self.pwm = None
         self.current_angle = 0  # Start closed
+        self._lock = Lock()
         
         self._setup_gpio()
     
@@ -66,32 +68,41 @@ class ServoController:
         if not 0 <= angle <= 180:
             logger.warning(f"Invalid angle {angle}, clamping to 0-180")
             angle = max(0, min(180, angle))
+        if speed <= 0:
+            speed = 1.0
+
+        # Avoid unnecessary pulses and delays.
+        if angle == self.current_angle:
+            return
         
         logger.info(f"Rotating servo on pin {self.pin} from {self.current_angle}° to {angle}°")
-        
-        # Smooth rotation
-        step = 2 if angle > self.current_angle else -2
-        
-        for pos in range(self.current_angle, angle, step):
-            duty = self._angle_to_duty_cycle(pos)
+        with self._lock:
+            # Smooth rotation
+            step = 2 if angle > self.current_angle else -2
+            for pos in range(self.current_angle, angle, step):
+                duty = self._angle_to_duty_cycle(pos)
+                self.pwm.ChangeDutyCycle(duty)
+                time.sleep(0.01 / speed)
+
+            # Final position
+            duty = self._angle_to_duty_cycle(angle)
             self.pwm.ChangeDutyCycle(duty)
-            time.sleep(0.01 / speed)
-        
-        # Final position
-        duty = self._angle_to_duty_cycle(angle)
-        self.pwm.ChangeDutyCycle(duty)
-        time.sleep(0.3)
-        
-        self.current_angle = angle
-        
-        # Stop PWM signal to prevent jitter
-        self.pwm.ChangeDutyCycle(0)
+            time.sleep(0.12)
+
+            self.current_angle = angle
+
+            # Stop PWM signal to prevent continuous buzzing/jitter
+            self.pwm.ChangeDutyCycle(0)
     
     def cleanup(self):
         """Cleanup GPIO resources"""
         if self.pwm:
             self.pwm.stop()
-        GPIO.cleanup()
+        try:
+            GPIO.setup(self.pin, GPIO.OUT)
+            GPIO.output(self.pin, GPIO.LOW)
+        except Exception:
+            pass
         logger.info(f"Servo cleanup complete on pin {self.pin}")
     
     def __del__(self):
@@ -118,6 +129,7 @@ class BinServoController:
         electronic_pin: int,
         unknown_pin: int,
         frequency: int = 50,
+        speed: float = 1.0,
     ):
         self.dry = ServoController(pin=dry_pin, frequency=frequency)
         self.wet = ServoController(pin=wet_pin, frequency=frequency)
@@ -127,6 +139,8 @@ class BinServoController:
         # Simple open/close angles; you can calibrate these per door
         self.closed_angle = 0
         self.open_angle = 90
+        self.speed = speed if speed > 0 else 1.0
+        self.active_servo = None
         
         # Ensure all doors start closed
         self._close_all()
@@ -134,7 +148,8 @@ class BinServoController:
     def _close_all(self):
         for servo in (self.dry, self.wet, self.electronic, self.unknown):
             try:
-                servo.rotate_to(self.closed_angle)
+                if servo.current_angle != self.closed_angle:
+                    servo.rotate_to(self.closed_angle, speed=self.speed)
             except Exception as e:
                 logger.warning(f"Failed to close servo: {e}")
     
@@ -146,9 +161,7 @@ class BinServoController:
             bin_type: 'dry' | 'wet' | 'electronic' | 'reject' | 'processing'
         """
         logger.info(f"Routing to bin (multi-servo): {bin_type}")
-        # Close all doors
-        self._close_all()
-        
+
         # Open the appropriate door
         target = None
         if bin_type == 'dry':
@@ -160,9 +173,17 @@ class BinServoController:
         else:
             # reject, processing, unknown, multi-object
             target = self.unknown
-        
+
+        # Close previously active door only, then open target.
+        if self.active_servo and self.active_servo is not target:
+            try:
+                self.active_servo.rotate_to(self.closed_angle, speed=self.speed)
+            except Exception as e:
+                logger.warning(f"Failed to close previous active servo: {e}")
+
         try:
-            target.rotate_to(self.open_angle)
+            target.rotate_to(self.open_angle, speed=self.speed)
+            self.active_servo = target
         except Exception as e:
             logger.error(f"Failed to open door for {bin_type}: {e}")
     
@@ -170,6 +191,7 @@ class BinServoController:
         """Close all doors."""
         logger.info("Resetting all bin doors (close)")
         self._close_all()
+        self.active_servo = None
     
     def cleanup(self):
         """Cleanup all servos."""

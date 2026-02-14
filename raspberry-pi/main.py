@@ -84,6 +84,7 @@ class SmartBinSystem:
             wet_pin=GPIOConfig.SERVO_WET_PIN,
             electronic_pin=GPIOConfig.SERVO_ELECTRONIC_PIN,
             unknown_pin=GPIOConfig.SERVO_UNKNOWN_PIN,
+            speed=config.SERVO_SPEED,
         )
         
         self.bin_monitor = MultiBinMonitor(GPIOConfig.get_bin_sensors())
