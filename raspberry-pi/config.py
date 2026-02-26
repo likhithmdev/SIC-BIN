@@ -4,6 +4,13 @@ Central configuration for Raspberry Pi system
 """
 
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+
+# Load environment variables from raspberry-pi/.env if present.
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
 
 class Config:

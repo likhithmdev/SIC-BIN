@@ -84,6 +84,7 @@ class SmartBinSystem:
             wet_pin=GPIOConfig.SERVO_WET_PIN,
             electronic_pin=GPIOConfig.SERVO_ELECTRONIC_PIN,
             unknown_pin=GPIOConfig.SERVO_UNKNOWN_PIN,
+            speed=config.SERVO_SPEED,
         )
         
         self.bin_monitor = MultiBinMonitor(GPIOConfig.get_bin_sensors())
@@ -157,7 +158,7 @@ class SmartBinSystem:
             
             if destination != 'none':
                 logger.info(f"Routing to: {destination}")
-                self.servo.rotate_to_bin(destination)
+                self.servo.route_to_bin(destination)
                 time.sleep(2)  # Allow time for waste to drop
                 self.servo.reset()
             else:
@@ -185,8 +186,12 @@ class SmartBinSystem:
                 # Publish status
                 self.mqtt.publish_bin_status(levels)
                 
-                # Check for full bins
-                full_bins = self.bin_monitor.check_any_full(config.BIN_FULL_THRESHOLD)
+                # Check for full bins using current readings (avoid re-triggering sensors)
+                full_bins = [
+                    bin_name
+                    for bin_name, level in levels.items()
+                    if level >= config.BIN_FULL_THRESHOLD
+                ]
                 
                 if full_bins:
                     for bin_name in full_bins:

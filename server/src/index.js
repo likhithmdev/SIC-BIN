@@ -65,8 +65,31 @@ mqttService.onMessage(mqttConfig.topics.detection, async (data) => {
   // Auto-credit points when plastic or e-waste is segregated
   const activeUserId = activeUserStore.getActiveUser();
   if (activeUserId) {
-    const wasteType = data.destination || data.objects?.[0]?.class || data.label;
-    const isReject = (data.destination === 'reject' || (data.confidence !== undefined && data.confidence < 0.65));
+    const normalizeWasteType = (value) => {
+      if (!value) return null;
+      const v = String(value).trim().toLowerCase();
+      if (['dry', 'plastic', 'plastics'].includes(v)) return 'dry';
+      if (['electronic', 'e-waste', 'ewaste', 'e_waste'].includes(v)) return 'electronic';
+      if (['wet', 'organic'].includes(v)) return 'wet';
+      return null;
+    };
+
+    const objectTypes = Array.isArray(data.objects)
+      ? data.objects.map(obj => normalizeWasteType(obj?.class)).filter(Boolean)
+      : [];
+    const destinationType = normalizeWasteType(data.destination);
+    const labelType = normalizeWasteType(data.label);
+
+    // Prefer object classes first; destination can be "processing" for multi-object detections.
+    let wasteType = objectTypes.find(t => t === 'electronic')
+      || objectTypes.find(t => t === 'dry')
+      || destinationType
+      || labelType;
+
+    const isReject = (
+      data.destination === 'reject'
+      || (data.confidence !== undefined && data.confidence < 0.65)
+    );
     const isEligible = wasteType === 'dry' || wasteType === 'electronic';
     if (isEligible && !isReject) {
       try {

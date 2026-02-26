@@ -89,7 +89,11 @@ class UltrasonicSensor:
             time.sleep(0.05)
         
         if not distances:
-            logger.warning("No valid distance measurements")
+            logger.warning(
+                "No valid distance measurements (trigger=%s, echo=%s)",
+                self.trigger_pin,
+                self.echo_pin,
+            )
             return -1
         
         avg_distance = sum(distances) / len(distances)

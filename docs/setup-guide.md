@@ -6,7 +6,7 @@
 - Raspberry Pi 4 (4GB+ recommended)
 - USB Camera or Pi Camera Module
 - Servo Motor (SG90 or similar)
-- HC-SR04 Ultrasonic Sensors (5x)
+- HC-SR04 Ultrasonic Sensors (3x)
 - IR Proximity Sensor
 - Jumper wires and breadboard
 
@@ -130,7 +130,6 @@ models/
 Dry Bin:        Trigger → GPIO 23, Echo → GPIO 24
 Wet Bin:        Trigger → GPIO 25, Echo → GPIO 8
 Electronic Bin: Trigger → GPIO 7,  Echo → GPIO 1
-Processing:     Trigger → GPIO 20, Echo → GPIO 21
 ```
 
 ## Running the System
